@@ -200,6 +200,7 @@ public class Point {
 		return true;
 	}
 	
+	//-1, 0, or +1 for inside, on, or outside of circumcircle
 	public int checkCircumcircle (Point[] simplex) {
 		Point[] matrix = new Point[simplex.length + 1];
 		for (int i = 0; i < simplex.length; i++)
