@@ -2,8 +2,10 @@ package ds;
 
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.List;
+import java.util.Iterator;
 import java.util.NoSuchElementException;
+
+import ds.Point;
 
 /**
  * A Triangle is an immutable Set of exactly three Pnts.
@@ -42,5 +44,51 @@ public class Triangle extends ArraySet<Point>{
 			if(!triangle.contains(v))
 				c++;
 		return c == 1;
+	}
+	
+	public ArraySet<Point> facetOpp(Point vertex) {
+		ArraySet<Point> facet = new ArraySet<Point>(this);
+		if(facet.remove(vertex))
+			return facet;
+		throw new IllegalArgumentException("Vertex not in triangle");
+	}
+	
+	public Point getCircumcenter() {
+		if(ccenter == null)
+			ccenter = new Point().circumcenter(this.toArray(new Point[0]));
+		return ccenter;
+	}
+	
+	@Override
+    public boolean add (Point vertex) {
+        throw new UnsupportedOperationException();
+    }
+	
+	@Override
+	public Iterator<Point> iterator () {
+	    return new Iterator<Point>() {
+	        private Iterator<Point> it = Triangle.super.iterator();
+	        public boolean hasNext() {
+	        	return it.hasNext();
+	        }
+	        public Point next() {
+	        	return it.next();
+	        }
+	        public void remove() {
+	        	throw new UnsupportedOperationException();
+	        }
+	    };
+	}
+	
+	/* The following two methods ensure that all triangles are different. */
+	
+	@Override
+	public int hashCode () {
+	    return (int)(id^(id>>>32));
+	}
+	
+	@Override
+	public boolean equals (Object o) {
+	    return (this == o);
 	}
 }
