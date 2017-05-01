@@ -2,13 +2,14 @@ package MainApp;
 
 import java.awt.*;
 import java.awt.event.*;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
-import java.util.Random;
 
 import javax.swing.*;
+
+import hlstructs.Triangulation;
+import ds.Point;
+import ds.Triangle;
 
 public class Vor_Del_App extends javax.swing.JApplet
 		implements Runnable, ActionListener, MouseListener {
@@ -105,7 +106,7 @@ public class Vor_Del_App extends javax.swing.JApplet
 		if(e.getSource() != delCanvas)
 			return;
 		Point point = new Point(e.getX(), e.getY());
-		//delCanvas.addPoint(point);
+		delCanvas.addPoint(point);
 		delCanvas.repaint();
 	}
 
@@ -118,35 +119,24 @@ public class Vor_Del_App extends javax.swing.JApplet
 	@Override
 	public void actionPerformed(ActionEvent event) {
 		if(event.getSource() == clear)
-			//delCanvas.clear();
+			delCanvas.clear();
 		delCanvas.repaint();
 		
 	}
 	
-	/**
-     * @return true iff doing Voronoi diagram.
-     */
+	/*Voronoi mode*/
     public boolean isVoronoi() {
         return vorButton.isSelected();
     }
 
-    /**
-     * @return true iff within circle switch
-     */
     public boolean showCircles() {
         return mouseIn == circleLab;
     }
 
-    /**
-     * @return true iff within delaunay switch
-     */
     public boolean showDelaunay() {
         return mouseIn == delLab;
     }
 
-    /**
-     * @return true iff within voronoi switch
-     */
     public boolean showVoronoi() {
         return mouseIn == vorLab;
     }
@@ -155,9 +145,128 @@ public class Vor_Del_App extends javax.swing.JApplet
 class DelPanel extends JPanel {
 		
 	private Vor_Del_App app;
+	private Triangulation delTri;
+	private Triangle startTri;
+	private static int triSize = 10000;
+	private Graphics g;
+	
+	public static Color vorColor = Color.pink;
+	public static Color delColor = Color.cyan;
+	public static int pRad = 4;
 	
 	public DelPanel(Vor_Del_App app) {
 		this.app = app;
+		startTri = new Triangle(
+				new Point(-triSize, -triSize),
+				new Point( triSize, -triSize),
+				new Point(		 0,  triSize)
+				);
+		delTri = new Triangulation(startTri);
+	}
+	
+	public void addPoint(Point pt) {
+		delTri.delaunayAdd(pt);
+	}
+	
+	public void clear() {
+		delTri = new Triangulation(startTri);
+	}
+	
+	/*Low level draw methods*/
+	
+	//draw point
+	public void draw(Point pt) {
+		int r = pRad;
+		int x = (int) pt.coord(0);
+		int y = (int) pt.coord(1);
+		g.fillOval(x-r, y-r, 2*r, 2*r);
+	} 
+	
+	//draw circle
+	public void draw(Point c, double rad) {
+		int x = (int) c.coord(0);
+		int y = (int) c.coord(1);
+		int r = (int) rad;
+		g.drawOval(x-r, y-r, 2*r, 2*r);
+	}
+	
+	//Draw polygon
+	public void draw(Point[] poly) {
+		int[] x = new int[poly.length];
+		int[] y = new int[poly.length];
+		for(int i = 0; i<poly.length; i++) {
+			x[i] = (int) poly[i].coord(0);
+			y[i] = (int) poly[i].coord(1);
+		}
+        g.drawPolygon(x, y, poly.length);
+	}
+	
+	/*Painting panel*/
+	public void paintComponent(Graphics g) {
+		super.paintComponent(g);
+		this.g = g;
+		
+		Color t = g.getColor();
+		if(!app.isVoronoi())
+			g.setColor(delColor);
+		else if(delTri.contains(startTri))
+			g.setColor(this.getBackground());
+		else
+			g.setColor(vorColor);
+		g.fillRect(0, 0, this.getWidth(), this.getHeight());
+		g.setColor(t);
+		
+		if(app.isVoronoi())
+			drawVoronoi(true);
+		else
+			drawDelaunay();
+		
+		t = g.getColor();
+		g.setColor(Color.white);
+		if(app.showCircles())
+			drawCircles();
+		if(app.showVoronoi())
+			drawVoronoi(false);
+		if(app.showDelaunay())
+			drawDelaunay();
+		g.setColor(t);
+	}
+	
+	//Draw Voronoi Diagram
+	public void drawVoronoi(boolean drawV) {
+		HashSet<Point> tri = new HashSet<Point>(startTri);
+		for(Triangle tr: delTri) {
+			for(Point v: tr) {
+				if(tri.contains(v))
+					continue;
+				List<Triangle> adjTri = delTri.adjTriangles(v, tr);
+				Point[] vertices = new Point[adjTri.size()];
+				int i = 0;
+				for(Triangle t: adjTri)
+					vertices[i++] = t.getCircumcenter();
+				draw(vertices);
+				if (drawV) draw(v);
+			}
+		}
+	}
+	
+	//Draw Delaunay triangulation
+	public void drawDelaunay() {
+		for(Triangle tr: delTri) {
+			Point[] vertices = tr.toArray(new Point[0]);
+			draw(vertices);
+		}
+	}
+	
+	//Draw empty circles
+	public void drawCircles() {
+		for(Triangle tr: delTri) {
+			if(tr.containsAny(startTri))
+				continue;
+			Point c = tr.getCircumcenter();
+			double rad = c.subtract(tr.get(0)).magnitude();
+			draw(c, rad);
+		}
 	}
 	
 }
