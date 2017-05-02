@@ -11,6 +11,7 @@ import hlstructs.Triangulation;
 import ds.Point;
 import ds.Triangle;
 
+@SuppressWarnings("serial")
 public class Vor_Del_App extends javax.swing.JApplet
 		implements Runnable, ActionListener, MouseListener {
 	
@@ -141,7 +142,8 @@ public class Vor_Del_App extends javax.swing.JApplet
         return mouseIn == vorLab;
     }
 }
-	
+
+@SuppressWarnings("serial")
 class DelPanel extends JPanel {
 		
 	private Vor_Del_App app;
@@ -223,8 +225,10 @@ class DelPanel extends JPanel {
 		
 		t = g.getColor();
 		g.setColor(Color.white);
-		if(app.showCircles())
+		if(app.showCircles()) {
+			g.setColor(Color.black);
 			drawCircles();
+		}
 		if(app.showVoronoi())
 			drawVoronoi(false);
 		if(app.showDelaunay())
